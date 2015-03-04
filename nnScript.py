@@ -3,7 +3,7 @@ from scipy.optimize import minimize
 from scipy.io import loadmat
 from scipy.io import savemat
 from math import sqrt
-
+_itr = 0
 
 def initializeWeights(n_in,n_out):
     """
@@ -58,7 +58,7 @@ def selectfeatures(orig_data,size):
             mark_remove = np.append(mark_remove,j)
     
     pix_remain = np.array(list(set(range(data.shape[1])) - set(mark_remove)))
-    return data[:,pix_remain]
+    return data[:,pix_remain],pix_remain
 
 def preprocess():
     """ Input:
@@ -87,7 +87,7 @@ def preprocess():
      - normalize the data to [0, 1]
      - feature selection"""
     
-    mat = loadmat('mnist_all.mat') #loads the MAT object as a Dictionary
+    mat = loadmat('/home/avinav/ML/basecode/mnist_all.mat') #loads the MAT object as a Dictionary
     im_data = mat.get('train0')
     im_data = im_data.astype('float32')
     train_data_matrix = im_data/255
@@ -107,7 +107,7 @@ def preprocess():
         lab = np.array([lab]*im_data.shape[0])
         size_train_samples[i] = im_data.shape[0]
         train_labels = np.vstack((train_labels,lab))
-    train_data_matrix = selectfeatures(train_data_matrix,size_train_samples)
+    #train_data_matrix,pix_remain = selectfeatures(train_data_matrix,size_train_samples)
     
     im_data = mat.get('test0')
     im_data = im_data.astype('float32')
@@ -128,22 +128,22 @@ def preprocess():
         lab = np.array([lab]*im_data.shape[0])
         size_test_samples[i] = im_data.shape[0]
         test_labels = np.vstack((test_labels,lab))
-    test_data_matrix = selectfeatures(test_data_matrix,size_test_samples)
-    
+    #test_data_matrix = selectfeatures(test_data_matrix,size_test_samples)
+    #test_data_matrix = test_data_matrix[:,pix_remain]
     #Pick a reasonable size for validation data
     import random
-    #rs = random.sample(range(60000),50000)
-    #rs_v = list(set(range(60000)) - set(rs))
-    rs = random.sample(range(60000),500)
+    rs = random.sample(range(60000),50000)
     rs_v = list(set(range(60000)) - set(rs))
-    rs_v = random.sample(rs_v,100)
-    rs_tt = random.sample(range(test_data_matrix.shape[0]),100)
+    #rs = random.sample(range(60000),5000)
+    #rs_v = list(set(range(60000)) - set(rs))
+    #rs_v = random.sample(rs_v,1000)
+    #rs_tt = random.sample(range(test_data_matrix.shape[0]),1000)
     tr_data = train_data_matrix[np.array(rs)]
     tr_labels = train_labels[np.array(rs)]
     vs_data = train_data_matrix[np.array(rs_v)]
     vs_labels = train_labels[np.array(rs_v)]    
-    tt_data = test_data_matrix[np.array(rs_tt)]
-    tt_labels = test_labels[np.array(rs_tt)]
+    #tt_data = test_data_matrix[np.array(rs_tt)]
+    #tt_labels = test_labels[np.array(rs_tt)]
     #Your code here
     #train_data = np.array([])
     #train_label = np.array([])
@@ -151,10 +151,10 @@ def preprocess():
     #validation_label = np.array([])
     #test_data = np.array([])
     #test_label = np.array([])
-    #return tr_data, tr_labels, vs_data, vs_labels, test_data_matrix, test_labels
+    return tr_data, tr_labels, vs_data, vs_labels, test_data_matrix, test_labels
     #return train_data, train_label, validation_data, validation_label, test_data, test_label
 
-    return tr_data, tr_labels, vs_data, vs_labels, tt_data, tt_labels    
+    #return tr_data, tr_labels, vs_data, vs_labels, tt_data, tt_labels    
     
     
 
@@ -195,7 +195,9 @@ def nnObjFunction(params, *args):
     % w2: matrix of weights of connections from hidden layer to output layers.
     %     w2(i, j) represents the weight of connection from unit j in hidden 
     %     layer to unit i in output layer."""
-    
+    #global _itr
+    #_itr += 1
+    #print ("iteration", _itr)
     n_input, n_hidden, n_class, training_data, training_label, lambdaval = args
     
     w1 = params[0:n_hidden * (n_input + 1)].reshape( (n_hidden, (n_input + 1)))
@@ -209,43 +211,61 @@ def nnObjFunction(params, *args):
     #
     #
     n_samples = training_data.shape[0];
-    inp = np.array([0]*(n_input+1),dtype='float32')
-    hid = np.array([0]*(n_hidden+1),dtype='float32')
-    out = np.array([0]*n_class,dtype='float32')
+    #print ("n_samples:",n_samples)
+    #print ("n_input:",n_input)
+    #inp = np.array([0]*(n_input+1),dtype='float32')
+    #hid = np.array([0]*(n_hidden+1),dtype='float32')
+    #out = np.array([0]*n_class,dtype='float32')
+    inp = np.zeros((1,n_input+1))
+    hid = np.zeros((1,n_hidden+1))
+    out = np.zeros((1,n_class))
     grad_w1 = np.zeros(w1.shape)
     grad_w2 = np.zeros(w2.shape)
     gradw1sum = np.zeros(w1.shape)
     gradw2sum = np.zeros(w2.shape)
     obj_val = 0
     lab = np.array([0]*10)
+    hid[0][n_hidden] = 1 #setting bias terms
     for sam in range(n_samples):
         inp = np.concatenate((training_data[sam,:],[1])) #appending bias terms
-        hid[n_hidden] = 1 #setting bias terms
         lab = training_label[sam,:]
         # feed forward
-        for k in range(n_hidden):
+        '''for k in range(n_hidden):
             for i in range(n_input+1):
                 hid[k] += inp[i]*w1[k][i]
-            hid[k] = sigmoid(hid[k])
-        for l in range(n_class):
+            hid[k] = sigmoid(hid[k])'''
+        #tempinp = inp.reshape(1,inp.size)
+        inp = inp.reshape(1,inp.size)
+        hid[0][:-1] = np.dot(inp,w1.T)
+        hid[0][:-1] = sigmoid(hid[0][:-1])
+        '''for l in range(n_class):
             for k in range(n_hidden+1):
                 out[l] += hid[l]*w2[l][k]
-            out[l] = sigmoid(out[l])
+            out[l] = sigmoid(out[l])'''
+        out = np.dot(hid,w2.T)
+        out = sigmoid(out)
         # back propagation
-        for l  in range(n_class):
-            obj_val += lab[l]*np.log(out[l]) + (1-lab[l])*np.log(1 - out[l])
+        obj_val_temp = lab*np.log(out) + (1-lab)*np.log(1 - out)
+        obj_val += np.sum(obj_val_temp)
+        #obj_val += lab*np.log(out) + (1-lab)*np.log(1 - out)
         delval = out - lab
         
-        for l in range(n_class):
+        '''for l in range(n_class):
             for k in range(n_hidden+1):
-                grad_w2[l][k] = delval[l]*hid[k]
-        
-        for k in range(n_hidden):
+                grad_w2[l][k] = delval[l]*hid[k]'''
+        grad_w2 = np.dot(delval.T,hid)
+        temp = np.zeros((1,n_hidden))
+        temp = np.dot(delval,w2)
+        '''for k in range(n_hidden):
             for i in range(n_input+1):
                 temp = 0;
-                for l in range(n_class):
-                    temp += delval[l]*w2[l][k]
-                grad_w1[l][k] = (1 - hid[k])*hid[k]*temp*inp[i]
+                #temp = np.sum(np.dot(delval.T,w2)
+                #for l in range(n_class):
+                #    temp += delval[0][l]*w2[l][k]
+                grad_w1[k][i] = (1 - hid[0][k])*hid[0][k]*temp[0][k]*inp[0][i]'''
+        temp1 = ((1-hid[0][:-1])*hid[0][:-1]*temp[0][:-1])
+        temp1 = temp1.reshape(1,temp1.size)
+        grad_w1 = np.dot(temp1.T,inp)
         gradw1sum += grad_w1
         gradw2sum += grad_w2
     
@@ -259,7 +279,7 @@ def nnObjFunction(params, *args):
     #you would use code similar to the one below to create a flat array
     obj_grad = np.concatenate((grad_w1.flatten(), grad_w2.flatten()),0)
     #obj_grad = np.array([])
-    obj_val = obj_val/n_samples
+    obj_val = -1*obj_val/n_samples
     return (obj_val,obj_grad)
 
 
@@ -288,31 +308,36 @@ def nnPredict(w1,w2,data):
     n_hidden = w1.shape[0]
     n_class = w2.shape[0]
     n_samples = data.shape[0];
-    inp = np.array([0]*(n_input+1),dtype='float32')
-    hid = np.array([0]*(n_hidden+1),dtype='float32')
-    out = np.array([0]*(n_class),dtype='float32')
+    inp = np.zeros((1,n_input+1))
+    hid = np.zeros((1,n_hidden+1))
+    out = np.zeros((1,n_class))
     label = np.array([])
+    hid[0][n_hidden] = 1 #setting bias terms
+    initLabel = False
     for sam in range(n_samples):
         inp = np.concatenate((data[sam,:],[1])) #appending bias terms
-        hid[n_hidden] = 1 #setting bias terms
+        inp = inp.reshape(1,inp.size)
         # feed forward
-        for k in range(n_hidden):
-            for i in range(n_input+1):
-                hid[k] += inp[i]*w1[k][i]
-            hid[k] = sigmoid(hid[k])
-        for l in range(n_class):
-            for k in range(n_hidden+1):
-                out[l] += hid[l]*w2[l][k]
-            out[l] = sigmoid(out[l])
-        label = np.append(label,np.argmax(out))
+        hid[0][:-1] = np.dot(inp,w1.T)
+        hid[0][:-1] = sigmoid(hid[0][:-1])
+        out = np.dot(hid,w2.T)
+        out = sigmoid(out)
+        temp = np.array([0]*10)
+        temp[np.argmax(out)] = 1
+        if (initLabel):
+            label = np.vstack((label,temp))
+        else:
+            label = np.copy(temp)
+            initLabel = True
     return label
 
 
 
 """**************Neural Network Script Starts here********************************"""
-
+import time
+start_time = time.time()
 train_data, train_label, validation_data,validation_label, test_data, test_label = preprocess();
-
+print ("pre-processed!")
 
 #  Train Neural Network
 
@@ -340,38 +365,40 @@ args = (n_input, n_hidden, n_class, train_data, train_label, lambdaval)
 
 #Train Neural Network using fmin_cg or minimize from scipy,optimize module. Check documentation for a working example
 
-opts = {'maxiter' : 50}    # Preferred value.
+opts = {'maxiter':50}    # Preferred value.
 
 nn_params = minimize(nnObjFunction, initialWeights, jac=True, args=args,method='CG', options=opts)
-
+#nn_params = fmin(nnObjFunction, initialWeights, args=args, maxfun=2,maxiter=2)
 #In Case you want to use fmin_cg, you may have to split the nnObjectFunction to two functions nnObjFunctionVal
 #and nnObjGradient. Check documentation for this function before you proceed.
 #nn_params, cost = fmin_cg(nnObjFunctionVal, initialWeights, nnObjGradient,args = args, maxiter = 50)
 
 
 #Reshape nnParams from 1D vector into w1 and w2 matrices
-w1 = nn_params[0:n_hidden * (n_input + 1)].reshape( (n_hidden, (n_input + 1)))
-w2 = nn_params[(n_hidden * (n_input + 1)):].reshape((n_class, (n_hidden + 1)))
+w1 = nn_params.x[0:n_hidden * (n_input + 1)].reshape( (n_hidden, (n_input + 1)))
+w2 = nn_params.x[(n_hidden * (n_input + 1)):].reshape((n_class, (n_hidden + 1)))
 
 w_dict = {'w1': w1,'w2' : w2}
 savemat('weights.mat',w_dict)
 #Test the computed parameters
 
 predicted_label = nnPredict(w1,w2,train_data)
-
+temp_label=np.copy(predicted_label)
 #find the accuracy on Training Dataset
 
-print('\n Training set Accuracy:' + str(100*np.mean((predicted_label == train_label).astype(float))) + '%')
+print('\n Training set Accuracy:' + str(100*np.mean(np.argmax(predicted_label,1) == np.argmax(train_label,1))) + '%')
 
 predicted_label = nnPredict(w1,w2,validation_data)
 
 #find the accuracy on Validation Dataset
 
-print('\n Validation set Accuracy:' + str(100*np.mean((predicted_label == validation_label).astype(float))) + '%')
+print('\n Validation set Accuracy:' + str(100*np.mean(np.argmax(predicted_label,1) == np.argmax(validation_label,1))) + '%')
 
 
 predicted_label = nnPredict(w1,w2,test_data)
 
 #find the accuracy on Validation Dataset
 
-print('\n Test set Accuracy:' + + str(100*np.mean((predicted_label == test_label).astype(float))) + '%')
+print('\n Test set Accuracy:' + str(100*np.mean(np.argmax(predicted_label,1) == np.argmax(test_label,1))) + '%')
+
+print('Time taken %s seconds'% (time.time() - start_time))
