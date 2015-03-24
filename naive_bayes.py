@@ -109,24 +109,36 @@ print('\n Test set Accuracy:' + str(100*np.mean(test_pred_labels == test_labels)
 
 
 
-norm_conf = np.zeros((10,10))
-norm_conf_string = np.zeros((10,10))
+conf_matrix = np.zeros((10,10))
+conf_matrix_string = np.zeros((10,10))
+num_digits = np.zeros(10)
 for i in range(10):
     for j in range(10):
-        norm_conf[i][j] = 100*np.mean(test_pred_labels[test_labels == i] == j)
-        norm_conf_string[i][j] = "%.2f" % norm_conf[i][j]
-            
-norm_conf = norm_conf.tolist()
+        conf_matrix[i][j] = 100*np.mean(test_pred_labels[test_labels == i] == j)
+        conf_matrix_string[i][j] = "%.2f" % conf_matrix[i][j]
+    num_digits[i] = len(test_pred_labels[test_labels == i])
+conf_matrix = conf_matrix.tolist()        
+savemat('conf_matrix_naive_bayes.mat',{'conf_matrix':conf_matrix,'conf_matrix_string':conf_matrix_string, 'num_digits': num_digits})
 
 
-plt.clf()
-fig = plt.figure()
-ax = fig.add_subplot(111)
-res = ax.imshow(np.array(norm_conf), cmap=cm.jet, interpolation='nearest')
-for i, cas in enumerate(norm_conf_string):
-    for j, c in enumerate(cas):
-        if c>0:
-            plt.text(j-.3, i+.3, c, fontsize=12)
-cb = fig.colorbar(res)
-savefig("naive_bayes_feature_confusion.png", format="png")
-fig.show()
+
+#norm_conf = np.zeros((10,10))
+#norm_conf_string = np.zeros((10,10))
+#for i in range(10):
+#    for j in range(10):
+#        norm_conf[i][j] = 100*np.mean(test_pred_labels[test_labels == i] == j)
+#        norm_conf_string[i][j] = "%.2f" % norm_conf[i][j]
+#            
+#norm_conf = norm_conf.tolist()
+#
+#plt.clf()
+#fig = plt.figure()
+#ax = fig.add_subplot(111)
+#res = ax.imshow(np.array(norm_conf), cmap=cm.jet, interpolation='nearest')
+#for i, cas in enumerate(norm_conf_string):
+#    for j, c in enumerate(cas):
+#        if c>0:
+#            plt.text(j-.3, i+.3, c, fontsize=12)
+#cb = fig.colorbar(res)
+#savefig("naive_bayes_feature_confusion.png", format="png")
+#fig.show()
