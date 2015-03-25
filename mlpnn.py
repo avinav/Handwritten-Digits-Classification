@@ -27,7 +27,7 @@ def sigmoid(z):
     
     """# Notice that z can be a scalar, a vector or a matrix
     # return the sigmoid of input z"""
-    return  np.reciprocal((1+np.exp(-1*z)))#your code here
+    return  np.reciprocal((1+np.exp(-1*z)))
     
 def selectfeatures(orig_data,size):
     import random
@@ -39,11 +39,8 @@ def selectfeatures(orig_data,size):
     for j in size:
         s = random.sample(range(i,i+j),n)
         samples[str(lab)] = data[s]
-        #samples[str(lab)][samples[str(lab)]<0.5] = 0
-        #samples[str(lab)][samples[str(lab)]>=0.5] = 1
         i = j 
         lab = lab + 1
-    #count0 = np.array([0]*10)
     pixel = np.array([-1]*10)
     mark_remove = np.array([],dtype='int32')
     for j in range(data.shape[1]):
@@ -62,8 +59,7 @@ def selectfeatures(orig_data,size):
 
 def preprocess():
     """ Input:
-     Although this function doesn't have any input, you are required to load
-     the MNIST data set from file 'mnist_all.mat'.
+   load the MNIST data set from file 'mnist_all.mat'.
 
      Output:
      train_data: matrix of training set. Each row of train_data contains 
@@ -101,13 +97,11 @@ def preprocess():
         im_data = im_data.astype('float32')
         im_data = im_data/255
         train_data_matrix = np.concatenate((train_data_matrix,im_data))
-        #train_labels = np.concatenate((train_labels,np.array([i]*im_data.shape[0])))
         lab = np.array([0]*10)
         lab[i] = 1
         lab = np.array([lab]*im_data.shape[0])
         size_train_samples[i] = im_data.shape[0]
         train_labels = np.vstack((train_labels,lab))
-    #train_data_matrix,pix_remain = selectfeatures(train_data_matrix,size_train_samples)
     
     im_data = mat.get('test0')
     im_data = im_data.astype('float32')
@@ -128,35 +122,15 @@ def preprocess():
         lab = np.array([lab]*im_data.shape[0])
         size_test_samples[i] = im_data.shape[0]
         test_labels = np.vstack((test_labels,lab))
-    #test_data_matrix = selectfeatures(test_data_matrix,size_test_samples)
-    #test_data_matrix = test_data_matrix[:,pix_remain]
     #Pick a reasonable size for validation data
     import random
     rs = random.sample(range(60000),50000)
     rs_v = list(set(range(60000)) - set(rs))
-    #rs = random.sample(range(60000),5000)
-    #rs_v = list(set(range(60000)) - set(rs))
-    #rs_v = random.sample(rs_v,1000)
-    #rs_tt = random.sample(range(test_data_matrix.shape[0]),1000)
     tr_data = train_data_matrix[np.array(rs)]
     tr_labels = train_labels[np.array(rs)]
     vs_data = train_data_matrix[np.array(rs_v)]
     vs_labels = train_labels[np.array(rs_v)]    
-    #tt_data = test_data_matrix[np.array(rs_tt)]
-    #tt_labels = test_labels[np.array(rs_tt)]
-    #Your code here
-    #train_data = np.array([])
-    #train_label = np.array([])
-    #validation_data = np.array([])
-    #validation_label = np.array([])
-    #test_data = np.array([])
-    #test_label = np.array([])
-    return tr_data, tr_labels, vs_data, vs_labels, test_data_matrix, test_labels
-    #return train_data, train_label, validation_data, validation_label, test_data, test_label
-
-    #return tr_data, tr_labels, vs_data, vs_labels, tt_data, tt_labels    
-    
-    
+    return tr_data, tr_labels, vs_data, vs_labels, test_data_matrix, test_labels    
 
 def nnObjFunction(params, *args):
     """% nnObjFunction computes the value of objective function (negative log 
@@ -195,27 +169,13 @@ def nnObjFunction(params, *args):
     % w2: matrix of weights of connections from hidden layer to output layers.
     %     w2(i, j) represents the weight of connection from unit j in hidden 
     %     layer to unit i in output layer."""
-    #global _itr
-    #_itr += 1
-    #print ("iteration", _itr)
     n_input, n_hidden, n_class, training_data, training_label, lambdaval = args
     
     w1 = params[0:n_hidden * (n_input + 1)].reshape( (n_hidden, (n_input + 1)))
     w2 = params[(n_hidden * (n_input + 1)):].reshape((n_class, (n_hidden + 1)))
     obj_val = 0  
     
-    #Your code here
-    #
-    #
-    #
-    #
-    #
     n_samples = training_data.shape[0];
-    #print ("n_samples:",n_samples)
-    #print ("n_input:",n_input)
-    #inp = np.array([0]*(n_input+1),dtype='float32')
-    #hid = np.array([0]*(n_hidden+1),dtype='float32')
-    #out = np.array([0]*n_class,dtype='float32')
     inp = np.zeros((1,n_input+1))
     hid = np.zeros((1,n_hidden+1))
     out = np.zeros((1,n_class))
@@ -230,39 +190,18 @@ def nnObjFunction(params, *args):
         inp = np.concatenate((training_data[sam,:],[1])) #appending bias terms
         lab = training_label[sam,:]
         # feed forward
-        '''for k in range(n_hidden):
-            for i in range(n_input+1):
-                hid[k] += inp[i]*w1[k][i]
-            hid[k] = sigmoid(hid[k])'''
-        #tempinp = inp.reshape(1,inp.size)
         inp = inp.reshape(1,inp.size)
         hid[0][:-1] = np.dot(inp,w1.T)
         hid[0][:-1] = sigmoid(hid[0][:-1])
-        '''for l in range(n_class):
-            for k in range(n_hidden+1):
-                out[l] += hid[l]*w2[l][k]
-            out[l] = sigmoid(out[l])'''
         out = np.dot(hid,w2.T)
         out = sigmoid(out)
         # back propagation
         obj_val_temp = lab*np.log(out) + (1-lab)*np.log(1 - out)
         obj_val += np.sum(obj_val_temp)
-        #obj_val += lab*np.log(out) + (1-lab)*np.log(1 - out)
         delval = out - lab
-        
-        '''for l in range(n_class):
-            for k in range(n_hidden+1):
-                grad_w2[l][k] = delval[l]*hid[k]'''
         grad_w2 = np.dot(delval.T,hid)
         temp = np.zeros((1,n_hidden))
         temp = np.dot(delval,w2)
-        '''for k in range(n_hidden):
-            for i in range(n_input+1):
-                temp = 0;
-                #temp = np.sum(np.dot(delval.T,w2)
-                #for l in range(n_class):
-                #    temp += delval[0][l]*w2[l][k]
-                grad_w1[k][i] = (1 - hid[0][k])*hid[0][k]*temp[0][k]*inp[0][i]'''
         temp1 = ((1-hid[0][:-1])*hid[0][:-1]*temp[0][:-1])
         temp1 = temp1.reshape(1,temp1.size)
         grad_w1 = np.dot(temp1.T,inp)
@@ -278,7 +217,6 @@ def nnObjFunction(params, *args):
     #Make sure you reshape the gradient matrices to a 1D array. for instance if your gradient matrices are grad_w1 and grad_w2
     #you would use code similar to the one below to create a flat array
     obj_grad = np.concatenate((grad_w1.flatten(), grad_w2.flatten()),0)
-    #obj_grad = np.array([])
     obj_val = -1*obj_val/n_samples
     return (obj_val,obj_grad)
 
@@ -302,8 +240,6 @@ def nnPredict(w1,w2,data):
     % Output: 
     % label: a column vector of predicted labels""" 
     
-    #labels = np.array([])
-    #Your code here
     n_input = w1.shape[1] - 1
     n_hidden = w1.shape[0]
     n_class = w2.shape[0]
@@ -368,10 +304,6 @@ args = (n_input, n_hidden, n_class, train_data, train_label, lambdaval)
 opts = {'maxiter':50}    # Preferred value.
 
 nn_params = minimize(nnObjFunction, initialWeights, jac=True, args=args,method='CG', options=opts)
-#nn_params = fmin(nnObjFunction, initialWeights, args=args, maxfun=2,maxiter=2)
-#In Case you want to use fmin_cg, you may have to split the nnObjectFunction to two functions nnObjFunctionVal
-#and nnObjGradient. Check documentation for this function before you proceed.
-#nn_params, cost = fmin_cg(nnObjFunctionVal, initialWeights, nnObjGradient,args = args, maxiter = 50)
 
 
 #Reshape nnParams from 1D vector into w1 and w2 matrices
